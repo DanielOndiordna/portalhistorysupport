@@ -2,10 +2,10 @@
 // @author         DanielOnDiordna
 // @name           IITC plugin: Portal History Support for all IITC versions (with cache)
 // @category       Tweak
-// @version        0.0.1.20210309.232200
+// @version        0.0.1.20210313.210700
 // @updateURL      https://softspot.nl/ingress/plugins/iitc-plugin-portalhistorysupport.meta.js
 // @downloadURL    https://softspot.nl/ingress/plugins/iitc-plugin-portalhistorysupport.user.js
-// @description    [danielondiordna-0.0.1.20210309.232200 With this plugin the Portal History will be implemented into all versions of IITC. This plugin injects functionality from the IITC-CE TEST release (version 0.31.1.20210225.132054) plus extra modifications into all IITC versions (IITC.me 0.26 / IITC-CE 0.31.1). Code will be injected into the IITC core. History results are cached and re-used automatically. Details from your COMMS captured portals are loaded automatically.
+// @description    [danielondiordna-0.0.1.20210313.210700] With this plugin the Portal History will be implemented into all versions of IITC. This plugin injects functionality from the IITC-CE TEST release (version 0.31.1.20210225.132054) plus extra modifications into all IITC versions (IITC.me / IITC-CE 0.31.1). Code will be injected into the IITC core. History results are cached and re-used automatically. Details from your COMMS captured portals are loaded automatically. Requires CORE subscription.
 // @id             iitc-plugin-portalhistorysupport@danielondiordna
 // @namespace      https://softspot.nl/ingress/
 // @match          https://intel.ingress.com/*
@@ -21,17 +21,16 @@ function wrapper(plugin_info) {
     var self = window.plugin.portalhistorysupport;
     self.id = 'portalhistorysupport';
     self.title = 'Portal History Support';
-    self.version = '0.0.1.20210309.232200';
+    self.version = '0.0.1.20210313.210700';
     self.author = 'DanielOnDiordna';
     self.changelog = `
 Changelog:
 
-version 0.0.1.20210309.232200
+version 0.0.1.20210313.210700
 - first release: part of the code was first used inside plugin Unique Portal History, but now moved to this separate plugin
 - auto load portal details if no history is returned from entity data, only load details when map status is 'done'
 - added comms monitoring for active agent captures
 - auto stop/start when zooming in/out and moving the map
-- button to refresh history for visible portals
 `;
     self.namespace = 'window.plugin.' + self.id + '.';
     self.pluginname = 'plugin-' + self.id;
@@ -676,8 +675,7 @@ version 0.0.1.20210309.232200
         }
 
         // find next undefined portal, try comms portals first
-        self.loadDetails.guid = self.getNextCommsCapturedPortal();
-        //console.log('startLoadDetails getNextCommsCapturedPortal:',self.loadDetails.guid)
+        self.loadDetails.guid = self.loadcommsCapturedPortals();
         if (!self.loadDetails.guid) { // nothing found, try to find first portal without history
             if (window.getMapZoomTileParameters(window.map.getZoom()).minLinkLength == 0) { // limit details loading to zoom levels all portals or all links
                 let displayBounds = window.map.getBounds();
@@ -712,13 +710,13 @@ version 0.0.1.20210309.232200
                 delete self.commsCapturedPortals.latlngportals[latE6lngE6];
                 if (!self.decodeHistory(self.getcache(guid)).captured)
                     self.commsCapturedPortals.guidlist[guid] = portal;
-                else // portal is already detected as captured
+                else // portal is detected as captured
                     delete self.commsCapturedPortals.guidlist[guid];
             }
         }
     };
 
-    self.getNextCommsCapturedPortal = function() {
+    self.loadcommsCapturedPortals = function() {
         // find first visible portal guid
         let displayBounds = window.map.getBounds();
         let loadguid = undefined;
@@ -728,7 +726,7 @@ version 0.0.1.20210309.232200
                     loadguid = guid;
                     break;
                 }
-            } else // portal is already detected as captured
+            } else // portal is detected as captured
                 delete self.commsCapturedPortals.guidlist[guid];
         }
 
@@ -759,7 +757,6 @@ version 0.0.1.20210309.232200
                 }
             }
         });
-        self.startLoadDetails();
     };
 
     self.refreshcacheclicked = function() {
@@ -842,7 +839,7 @@ version 0.0.1.20210309.232200
         let html = '<div>' +
             'Visible portals: <span id="' + self.id + '_count_visibleportals"></span> v:<span id="' + self.id + '_count_visited"></span>/c:<span id="' + self.id + '_count_captured"></span>/s:<span id="' + self.id + '_count_scoutControlled"></span><br />' +
             'Cached History: <span id="' + self.id + '_count_visibleportalswithhistorycache"></span><br />' +
-            '<input type="button" id="' + self.id + '_refreshbutton" value="Refresh cached history" onclick="' + self.namespace + 'refreshcacheclicked();"><br />' +
+            '<input type="button" id="' + self.id + '_refreshbutton" value="Refresh history for visible portals" onclick="' + self.namespace + 'refreshcacheclicked();"><br />' +
             'Missing history: <span id="' + self.id + '_count_visibleportalswithouthistorycache"></span><br />';
         html +=
             '<input type="checkbox" onclick="' + self.namespace + 'settings.autoloadmissinghistory = this.checked; ' + self.namespace + 'storesettings(); ' + self.namespace + 'startLoadDetails();" id="autoloadmissinghistorytoggle"' + (self.settings.autoloadmissinghistory?' checked':'') + '>' +
